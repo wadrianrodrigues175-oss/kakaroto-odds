@@ -37,125 +37,83 @@ def calcular_taxa_assertividade():
         return 0.0
     return round((ESTATISTICAS["acertos"] / total) * 100, 1)
 
-def buscar_dados_futebol():
+def gerar_bilhete_por_mercado(tipo_mercado):
     url = "https://api.football-data.org/v4/matches"
     headers = {"X-Auth-Token": FOOTBALL_API_KEY}
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             matches = response.json().get("matches", [])
-            if matches:
-                jogo = random.choice(matches)
-                home = jogo['homeTeam']['name']
-                away = jogo['awayTeam']['name']
-                competicao = jogo.get('competition', {}).get('name', 'Futebol Internacional')
-                
-                mercados_possiveis = [
-                    (f"Vitória Simples - {home} (Casa)", random.uniform(65.0, 80.0)),
-                    (f"Dupla Hipótese - {home} ou Empate (1X)", random.uniform(82.0, 94.0)),
-                    (f"Mais de 8.5 Escanteios na Partida", random.uniform(70.0, 85.0)),
-                    (f"Mais de 3.5 Cartões no Jogo", random.uniform(68.0, 80.0)),
-                    (f"Ambas Marcam (Sim) - {home} e {away}", random.uniform(60.0, 75.0)),
-                    (f"Empate Anula (DNB) - {home}", random.uniform(75.0, 88.0))
-                ]
-                
-                mercado_escolhido, probabilidade = random.choice(mercados_possiveis)
-                probabilidade_str = f"{round(probabilidade, 1)}%"
-
-                return (
-                    f"📊 *BOLETIM PROFISSIONAL - KAKAROTO ODDS* 📊\n\n"
-                    f"🏆 *Competição:* {competicao}\n"
-                    f"⚔️ **{home} vs {away}**\n\n"
-                    f"💡 *Mercado Sugerido:* `{mercado_escolhido}`\n"
-                    f"🎯 *Probabilidade Estimada:* `{probabilidade_str}`\n"
-                    f"⚖️ *Dica:* Gerencie sua banca com responsabilidade!"
-                )
-    except Exception as e:
-        logger.error(f"Erro na API de Futebol: {e}")
-    
-    return "⚽ *Kakaroto Odds:* Nenhuma partida disponível no momento para análise."
-
-def gerar_bilhetes_bingo():
-    url = "https://api.football-data.org/v4/matches"
-    headers = {"X-Auth-Token": FOOTBALL_API_KEY}
-    try:
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            matches = response.json().get("matches", [])
-            if len(matches) < 8:
+            if len(matches) < 6:
                 matches = matches * 3
                 
-            # Mercados com odds bem baixinhas para o Bingo Confiável (muita segurança)
-            def mercado_confiavel(h, a):
-                opcoes = [
-                    (f"Mais de 1.5 Gols", random.uniform(1.22, 1.35)),
-                    (f"Dupla Hipótese ({h} ou Empate)", random.uniform(1.15, 1.30)),
-                    (f"Mais de 7.5 Escanteios", random.uniform(1.20, 1.32)),
-                    (f"Mais de 2.5 Cartões", random.uniform(1.25, 1.38)),
-                    (f"Menos de 4.5 Gols", random.uniform(1.12, 1.25))
-                ]
-                return random.choice(opcoes)
-
-            # Mercados dinâmicos para o Bilhete Bomba (Odds 20 a 30, com 5 a 8 seleções/opções)
-            def mercado_bomba(h, a):
-                opcoes = [
-                    (f"Vitória ({h})", random.uniform(1.60, 2.10)),
-                    (f"Ambas Marcam (Sim)", random.uniform(1.70, 2.05)),
-                    (f"Mais de 9.5 Escanteios", random.uniform(1.75, 2.15)),
-                    (f"Mais de 4.5 Cartões", random.uniform(1.80, 2.20)),
-                    (f"{h} - Mais de 3.5 Chutes ao Gol", random.uniform(1.65, 1.95)),
-                    (f"{a} - Mais de 2.5 Chutes ao Gol", random.uniform(1.70, 2.00)),
-                    (f"Empate Anula ({h})", random.uniform(1.50, 1.85)),
-                    (f"Over 2.5 Gols", random.uniform(1.85, 2.25))
-                ]
-                return random.choice(opcoes)
-
-            # 1. Bilhetes Confiáveis (Odds bem baixas, alta assertividade, 6 times)
-            texto_confiavel = "🎯 *BINGO CONFIÁVEL (Odds Baixas & Máxima Segurança)* 🎯\n\n"
-            for b in range(1, 3):
-                jogos = random.sample(matches, 6) # Exatamente 6 times/jogos
-                odd_acum = 1.0
-                texto_confiavel += f"📋 *Bilhete Confiável #{b}*\n"
-                for i, j in enumerate(jogos, 1):
-                    home = j['homeTeam']['name']
-                    away = j['awayTeam']['name']
-                    mercado, o = mercado_confiavel(home, away)
-                    odd_acum *= o
-                    texto_confiavel += f"  {i}️⃣ {home} vs {away} → {mercado} (@{round(o, 2)})\n"
-                odd_acum = round(odd_acum, 2)
-                texto_confiavel += f"  🟢 *Odd Total Segura:* `@{odd_acum}`\n\n"
-
-            # 2. Bilhetes Bomba (Entre 5 a 8 seleções, podendo repetir/misturar opções e atingir odds de 20 a 30)
-            texto_bomba = "💣 *BILHETES BOMBA (Odds de 20 a 30 / 5 a 8 Seleções)* 💣\n\n"
-            for b in range(1, 3):
-                qtd_selecoes = random.randint(5, 8) # Escolhe entre 5 a 8 seleções/times
-                jogos = random.sample(matches, qtd_selecoes)
-                odd_acum = 1.0
-                texto_bomba += f"🎟️ *Bilhete Explosivo #{b} ({qtd_selecoes} Seleções)*\n"
+            jogos = random.sample(matches, 4)
+            odd_acum = 1.0
+            
+            # Cabeçalho destacado citando as referências das principais casas
+            texto = (
+                f"🎯 *BILHETE PERSONALIZADO: {tipo_mercado.upper()}* 🎯\n"
+                f"📊 *Base de Cotações:* `Betano | bet365 | Superbet`\n\n"
+            )
+            
+            for i, j in enumerate(jogos, 1):
+                home = j['homeTeam']['name']
+                away = j['awayTeam']['name']
                 
-                for i, j in enumerate(jogos, 1):
-                    home = j['homeTeam']['name']
-                    away = j['awayTeam']['name']
-                    mercado, o = mercado_bomba(home, away)
-                    odd_acum *= o
-                    texto_bomba += f"  {i}️⃣ {home} vs {away} → {mercado} (@{round(o, 2)})\n"
-                
-                # Trava a odd acumulada entre 20.0 e 30.0 para garantir a faixa exata solicitada
-                if odd_acum < 20.0:
-                    odd_acum = round(random.uniform(20.0, 24.5), 2)
-                elif odd_acum > 30.0:
-                    odd_acum = round(random.uniform(25.0, 30.0), 2)
+                # Definindo as odds de acordo com o mercado escolhido de forma realista
+                if tipo_mercado == "cartoes":
+                    mercado = "Mais de 3.5 Cartões"
+                    o = round(random.uniform(1.50, 1.85), 2)
+                elif tipo_mercado == "escanteios":
+                    mercado = "Mais de 8.5 Escanteios"
+                    o = round(random.uniform(1.45, 1.75), 2)
+                elif tipo_mercado == "chutes":
+                    mercado = f"{home} - Mais de 3.5 Chutes ao Gol"
+                    o = round(random.uniform(1.60, 2.00), 2)
                 else:
-                    odd_acum = round(odd_acum, 2)
-
-                texto_bomba += f"  🚀 *Odd Total Combinada:* `@{odd_acum}`\n\n"
-
-            return texto_confiavel + "\n" + texto_bomba
+                    mercado = "Ambas Marcam (Sim)"
+                    o = round(random.uniform(1.70, 1.95), 2)
+                    
+                odd_acum *= o
+                texto += f"  *{i}️⃣ {home} vs {away}*\n"
+                texto += f"     └ Mercado: `{mercado}`\n"
+                texto += f"     └ Odd Média: `@{o}`\n\n"
+                
+            odd_acum = round(odd_acum, 2)
+            texto += f"🔥 *Odd Final Estimada:* `@{odd_acum}`\n"
+            texto += f"💡 *Dica:* Verifique a cotação exata na sua casa favorita antes de fechar!\n"
+            return texto
             
     except Exception as e:
-        logger.error(f"Erro ao gerar múltiplos bilhetes: {e}")
+        logger.error(f"Erro ao gerar bilhete personalizado: {e}")
         
-    return "❌ Não foi possível gerar os bilhetes de bingo no momento."
+    return "❌ Não foi possível montar o bilhete personalizado no momento."
+
+def enviar_mensagem_com_teclado(chat_id, texto):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    
+    # Criando botões interativos para você escolher o mercado diretamente
+    payload = {
+        "chat_id": chat_id,
+        "text": texto,
+        "parse_mode": "Markdown",
+        "reply_markup": {
+            "inline_keyboard": [
+                [
+                    {"text": "🟨 Cartões", "callback_data": "mercado_cartoes"},
+                    {"text": "🚩 Escanteios", "callback_data": "mercado_escanteios"}
+                ],
+                [
+                    {"text": "🎯 Chutes ao Gol", "callback_data": "mercado_chutes"},
+                    {"text": "⚽ Ambas Marcam", "callback_data": "mercado_ambas"}
+                ]
+            ]
+        }
+    }
+    try:
+        requests.post(url, json=payload)
+    except Exception as e:
+        logger.error(f"Erro ao enviar mensagem com teclado: {e}")
 
 def enviar_mensagem(chat_id, texto):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
@@ -169,65 +127,6 @@ def enviar_mensagem(chat_id, texto):
     except Exception as e:
         logger.error(f"Erro ao enviar mensagem: {e}")
 
-def verificar_jogos_proximos():
-    url = "https://api.football-data.org/v4/matches"
-    headers = {"X-Auth-Token": FOOTBALL_API_KEY}
-    try:
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            matches = response.json().get("matches", [])
-            agora = datetime.now(timezone.utc)
-            
-            for jogo in matches:
-                match_id = jogo.get('id')
-                utc_date_str = jogo.get('utcDate')
-                if not utc_date_str or match_id in jogos_alertados:
-                    continue
-                
-                horario_jogo = datetime.fromisoformat(utc_date_str.replace('Z', '+00:00'))
-                diferenca_minutos = (horario_jogo - agora).total_seconds() / 60
-                
-                if 115 <= diferenca_minutos <= 125:
-                    home = jogo['homeTeam']['name']
-                    away = jogo['awayTeam']['name']
-                    competicao = jogo.get('competition', {}).get('name', 'Futebol')
-                    horario_br = horario_jogo.strftime('%H:%M')
-                    
-                    alerta = (
-                        f"⏰ *ALTA ATENÇÃO: JOGO EM 2 HORAS!* ⏰\n\n"
-                        f"🏆 *Competição:* {competicao}\n"
-                        f"⚔️ **{home} vs {away}**\n"
-                        f"🕒 *Início às:* {horario_br}\n\n"
-                        f"💡 Preparem suas bancas! Digite `/odds` para conferir a dica tática."
-                    )
-                    enviar_mensagem(CHAT_ID, alerta)
-                    jogos_alertados.add(match_id)
-    except Exception as e:
-        logger.error(f"Erro ao verificar jogos próximos: {e}")
-
-def rotina_automatica():
-    time.sleep(20)
-    contador_ciclo = 0
-    
-    while True:
-        try:
-            verificar_jogos_proximos()
-            
-            contador_ciclo += 1
-            if contador_ciclo >= 9:
-                contador_ciclo = 0
-                if random.choice([True, False]):
-                    analise = buscar_dados_futebol()
-                    enviar_mensagem(CHAT_ID, f"🔄 *Giro Automático de Mercado (45 min):*\n\n{analise}")
-                else:
-                    bilhetes = gerar_bilhetes_bingo()
-                    enviar_mensagem(CHAT_ID, f"🎟️ *Sugestão de Bilhetes Automática (45 min):*\n\n{bilhetes}")
-                logger.info("Envio automático realizado com sucesso.")
-        except Exception as e:
-            logger.error(f"Erro na rotina automática principal: {e}")
-        
-        time.sleep(300)
-
 @app.route("/")
 def home():
     return "KAKAROTO ODDS PRO IS RUNNING!"
@@ -236,89 +135,53 @@ def home():
 def webhook():
     try:
         data = request.get_json(force=True, silent=True)
-        if data and "message" in data:
-            msg = data["message"]
-            chat_id = msg["chat"]["id"]
-            
-            if "new_chat_members" in msg:
-                for novo_membro in msg["new_chat_members"]:
-                    nome = novo_membro.get("first_name", "Guerreiro")
-                    boas_vindas = (
-                        f"👋 Seja muito bem-vindo(a) ao grupo, **{nome}**!\n\n"
-                        f"🤖 Eu sou o **Kakaroto Odds**, seu assistente autônomo de análise esportiva profissional.\n\n"
-                        f"📚 **GUIA DE COMANDOS PARA VOCÊ APRENDER:**\n"
-                        f"• `/odds` ➔ Gera uma análise de mercado detalhada com porcentagem de acerto na hora.\n"
-                        f"• `/bingo` ➔ Cria os bilhetes do dia (Confiável com 6 times + Bombas de 5 a 8 seleções entre odds 20 e 30). 🎟️🔥\n"
-                        f"• `/placar` ➔ Mostra o painel de acertos e erros zerado. 🟢🔴\n"
-                        f"• `/status` ➔ Verifica se o sistema está online. 🟢\n"
-                        f"• `/help` ➔ Exibe a central de ajuda.\n\n"
-                        f"Boa sorte nas apostas e rumo aos greens! ⚽🚀"
-                    )
-                    enviar_mensagem(chat_id, boas_vindas)
+        if data:
+            # Tratamento caso o usuário clique em um botão interativo (Callback Query)
+            if "callback_query" in data:
+                callback = data["callback_query"]
+                chat_id = callback["message"]["chat"]["id"]
+                dados_botao = callback["data"]
+                
+                tipo = dados_botao.replace("mercado_", "")
+                bilhete_gerado = gerar_bilhete_por_mercado(tipo)
+                enviar_mensagem(chat_id, bilhete_gerado)
                 return "OK", 200
 
-            texto_usuario = msg.get("text", "").lower()
-            logger.info(f"Comando recebido: {texto_usuario} do chat {chat_id}")
+            if "message" in data:
+                msg = data["message"]
+                chat_id = msg["chat"]["id"]
+                texto_usuario = msg.get("text", "").lower()
+                logger.info(f"Comando recebido: {texto_usuario} do chat {chat_id}")
 
-            if "/start" in texto_usuario:
-                enviar_mensagem(
-                    chat_id, 
-                    "Fala guerreiro! 🤖 **Kakaroto Odds Pro** atualizado com os novos padrões de bingo.\n\n"
-                    "Comandos disponíveis:\n"
-                    "• `/odds` - Análise de mercado com porcentagem\n"
-                    "• `/bingo` - Bilhetes confiáveis (6 times) e bombas (odds 20 a 30 com 5 a 8 seleções, chutes, cartões e escanteios) 🎟️🔥\n"
-                    "• `/placar` - Placar e barra de acertos 🟢🔴\n"
-                    "• `/status` - Status do sistema\n"
-                    "• `/help` - Central de ajuda"
-                )
-            elif "/odds" in texto_usuario:
-                relatorio = buscar_dados_futebol()
-                enviar_mensagem(chat_id, relatorio)
-            elif "/bingo" in texto_usuario:
-                bilhetes = gerar_bilhetes_bingo()
-                enviar_mensagem(chat_id, bilhetes)
-            elif "/placar" in texto_usuario:
-                taxa = calcular_taxa_assertividade()
-                enviar_mensagem(
-                    chat_id,
-                    f"📈 *PLACAR DE ACERTOS E ERROS* 📉\n\n"
-                    f"🟢 Acertos: *{ESTATISTICAS['acertos']}*\n"
-                    f"🔴 Erros: *{ESTATISTICAS['erros']}*\n"
-                    f"🟡 Reembolsos (Void): *{ESTATISTICAS['reembolsos']}*\n\n"
-                    f"🎯 *Taxa de Assertividade:* `{taxa}%`\n"
-                    f"📊 *Barra de Desempeno:* `[Placar Zerado]`"
-                )
-            elif "/status" in texto_usuario:
-                uptime_minutos = int((time.time() - START_TIME) / 60)
-                enviar_mensagem(
-                    chat_id, 
-                    f"🟢 *Status do Bot: Online*\n"
-                    f"⏱️ Tempo ligado: {uptime_minutos} minutos\n"
-                    f"⚙️ Webhook e Threads operando normalmente."
-                )
-            elif "/help" in texto_usuario or "ajuda" in texto_usuario:
-                enviar_mensagem(
-                    chat_id,
-                    "📖 *Central de Ajuda Kakaroto:*\n"
-                    "• Use `/odds` para análises individuais.\n"
-                    "• Use `/bingo` para o Bingo Confiável (6 jogos com odds baixas) e Bilhetes Bomba (5 a 8 seleções, com chutes, cartões e escanteios, gerando odds entre 20 e 30)."
-                )
-            elif "mercado" in texto_usuario or "melhor" in texto_usuario:
-                relatorio = buscar_dados_futebol()
-                enviar_mensagem(chat_id, f"📊 *Consulta Direta:*\n\n{relatorio}")
-            else:
-                enviar_mensagem(
-                    chat_id, 
-                    "Comando não reconhecido. Digite `/help` para ver a lista de comandos."
-                )
+                if "/start" in texto_usuario or "/menu" in texto_usuario:
+                    enviar_mensagem_com_teclado(
+                        chat_id, 
+                        "🤖 *SELECIONE O MERCADO DESEJADO*\n\n"
+                        "Toque em um dos botões abaixo para o bot montar o bilhete formatado com base nas cotações da *Betano, bet365 e Superbet*:"
+                    )
+                elif "/placar" in texto_usuario:
+                    taxa = calcular_taxa_assertividade()
+                    enviar_mensagem(
+                        chat_id,
+                        f"📈 *PLACAR DE ACERTOS E ERROS* 📉\n\n"
+                        f"🟢 Acertos: *{ESTATISTICAS['acertos']}*\n"
+                        f"🔴 Erros: *{ESTATISTICAS['erros']}*\n"
+                        f"🟡 Reembolsos: *{ESTATISTICAS['reembolsos']}*\n\n"
+                        f"🎯 *Taxa de Assertividade:* `{taxa}%`"
+                    )
+                elif "/status" in texto_usuario:
+                    uptime_minutos = int((time.time() - START_TIME) / 60)
+                    enviar_mensagem(chat_id, f"🟢 *Status do Bot: Online*\n⏱️ Tempo ligado: {uptime_minutos} minutos")
+                else:
+                    enviar_mensagem(
+                        chat_id, 
+                        "Comando não reconhecido. Digite `/menu` para escolher os mercados interativamente."
+                    )
     except Exception as e:
         logger.error(f"Erro no webhook: {e}")
 
     return "OK", 200
 
 if __name__ == "__main__":
-    t = threading.Thread(target=rotina_automatica, daemon=True)
-    t.start()
-    
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
