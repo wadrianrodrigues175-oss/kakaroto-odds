@@ -5,7 +5,7 @@ import threading
 import random
 import logging
 import requests
-from datetime import datetime, timedelta, timezone, date
+from datetime import datetime, timedelta, timezone
 from flask import Flask, request
 
 # Configuração de Logs Profissionais
@@ -221,7 +221,7 @@ def enviar_mensagem(chat_id, texto):
         "parse_mode": "Markdown"
     }
     try:
-        requests.post(url, json=payload)
+        requests.post(url, json=payload, timeout=5)
     except Exception as e:
         logger.error(f"Erro ao enviar mensagem: {e}")
 
@@ -387,6 +387,8 @@ def webhook():
                     "O sistema está aplicando um reboot forçado. Volto em instantes! ⚡"
                 )
                 logger.info(f"Comando de reinicialização acionado pelo chat {chat_id}. Encerrando processo...")
+                # Pequena pausa para garantir o envio da mensagem antes de fechar o processo
+                time.sleep(1)
                 os._exit(0)
             elif "/status" in texto_usuario:
                 uptime_minutos = int((time.time() - START_TIME) / 60)
@@ -413,8 +415,4 @@ def webhook():
     except Exception as e:
         logger.error(f"Erro no webhook: {e}")
 
-    return "OK", 200
-
-if __name__ == "__main__":
-    t = threading.Thread(target=rotina_automatica, daemon=True)
-    t.start()
+    re
