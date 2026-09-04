@@ -414,3 +414,4 @@ def webhook():
 # Inicializa a thread de rotina automática ao iniciar o script
 t = threading.Thread(target=rotina_automatica, daemon=True)
 t.start()
+gunicorn==21.2.0
