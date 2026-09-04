@@ -51,14 +51,12 @@ def filtrar_apenas_jogos_futuros(matches):
         utc_date_str = j.get('utcDate')
         status = j.get('status', '')
         
-        # Ignora partidas encerradas ou adiadas
         if status in ['FINISHED', 'POSTPONED', 'CANCELLED', 'SUSPENDED']:
             continue
             
         if utc_date_str:
             try:
                 dt_jogo = datetime.fromisoformat(utc_date_str.replace('Z', '+00:00')).astimezone(fuso_br)
-                # Mantém apenas se o jogo for daqui para frente ou começou há menos de 15 minutos
                 if dt_jogo >= (agora_br - timedelta(minutes=15)):
                     matches_futuros.append(j)
             except Exception:
@@ -152,7 +150,6 @@ def gerar_bilhetes_bingo_automaticos():
                 ]
                 return random.choice(opcoes)
 
-            # 1. Bilhetes Moderados (Odds 3.0 a 6.0)
             texto_moderados = "🎯 *BILHETES MODERADOS (Próximos Jogos)* 🎯\n📊 *Base de Cotações:* `Betano | bet365 | Superbet`\n\n"
             for b in range(1, 3):
                 qtd = random.randint(3, 5)
@@ -179,7 +176,6 @@ def gerar_bilhetes_bingo_automaticos():
                     
                 texto_moderados += f"  🟢 *Odd Final Combinada:* `@{odd_acum}`\n\n"
 
-            # 2. Bilhetes Bomba (Odds 25 a 35)
             texto_bombas = "💣 *BILHETES BOMBA (Próximos Jogos)* 💣\n📊 *Base de Cotações:* `Betano | bet365 | Superbet`\n\n"
             for b in range(1, 3):
                 qtd_selecoes = random.randint(5, min(8, len(matches)))
@@ -312,7 +308,6 @@ def webhook():
             msg = data["message"]
             chat_id = msg["chat"]["id"]
             
-            # SUPORTE A FOTOS (Analisa o print do bilhete enviado)
             if "photo" in msg:
                 analisar_foto_bilhete(chat_id)
                 return "OK", 200
@@ -387,7 +382,6 @@ def webhook():
                     "O sistema está aplicando um reboot forçado. Volto em instantes! ⚡"
                 )
                 logger.info(f"Comando de reinicialização acionado pelo chat {chat_id}. Encerrando processo...")
-                # Pequena pausa para garantir o envio da mensagem antes de fechar o processo
                 time.sleep(1)
                 os._exit(0)
             elif "/status" in texto_usuario:
@@ -415,4 +409,8 @@ def webhook():
     except Exception as e:
         logger.error(f"Erro no webhook: {e}")
 
-    re
+    return "OK", 200
+
+# Inicializa a thread de rotina automática ao iniciar o script
+t = threading.Thread(target=rotina_automatica, daemon=True)
+t.start()
