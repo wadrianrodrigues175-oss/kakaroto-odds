@@ -21,7 +21,7 @@ FOOTBALL_API_KEY = "1055e42dd53a435aa872ac485baa5f95"
 # Tempo de início para calcular o uptime no comando /status
 START_TIME = time.time()
 
-# Estatísticas de Assertividade (Placar zerado)
+# Estatísticas de Assertividade (Foco exclusivo nas análises individuais)
 ESTATISTICAS = {
     "acertos": 0,
     "erros": 0,
@@ -258,8 +258,8 @@ def webhook():
                         f"🤖 Eu sou o **Kakaroto Odds**, seu assistente autônomo de análise esportiva profissional.\n\n"
                         f"📚 **GUIA DE COMANDOS PARA VOCÊ APRENDER:**\n"
                         f"• `/odds` ➔ Gera uma análise de mercado detalhada.\n"
-                        f"• `/bingo` ➔ Cria automaticamente bilhetes moderados (Odds 3 a 6) e bombas (Odds 25 a 35 com 5 a 8 seleções de várias ligas mundiais). 🎟️🔥\n"
-                        f"• `/placar` ➔ Mostra o painel de acertos e erros zerado. 🟢🔴\n"
+                        f"• `/bingo` ➔ Cria automaticamente bilhetes moderados e bombas de várias ligas mundiais. 🎟️🔥\n"
+                        f"• `/placar` ➔ Mostra o painel de acertos e erros das análises individuais. 🟢🔴\n"
                         f"• `/status` ➔ Verifica se o sistema está online. 🟢\n"
                         f"• `/help` ➔ Exibe a central de ajuda.\n\n"
                         f"Boa sorte nas apostas e rumo aos greens! ⚽🚀"
@@ -273,11 +273,14 @@ def webhook():
             if "/start" in texto_usuario:
                 enviar_mensagem(
                     chat_id, 
-                    "Fala guerreiro! 🤖 **Kakaroto Odds Pro** atualizado com o leque expandido de ligas globais.\n\n"
+                    "Fala guerreiro! 🤖 **Kakaroto Odds Pro** atualizado com comandos de placar automatizados.\n\n"
                     "Comandos disponíveis:\n"
                     "• `/odds` - Análise de mercado detalhada\n"
-                    "• `/bingo` - Bilhetes automáticos (Odds 3-6 e Bombas 25-35 com 5-8 seleções abrangendo várias ligas) 🎟️🔥\n"
+                    "• `/bingo` - Bilhetes automáticos (Odds 3-6 e Bombas 25-35) 🎟️🔥\n"
                     "• `/placar` - Placar e barra de acertos 🟢🔴\n"
+                    "• `/green` (ou `/acerto`) - Adiciona 1 acerto ao placar ✅\n"
+                    "• `/red` (ou `/erro`) - Adiciona 1 erro ao placar ❌\n"
+                    "• `/void` (ou `/reembolso`) - Adiciona 1 reembolso ao placar 🟡\n"
                     "• `/status` - Status do sistema\n"
                     "• `/help` - Central de ajuda"
                 )
@@ -291,12 +294,25 @@ def webhook():
                 taxa = calcular_taxa_assertividade()
                 enviar_mensagem(
                     chat_id,
-                    f"📈 *PLACAR DE ACERTOS E ERROS* 📉\n\n"
+                    f"📈 *PLACAR DE ACERTOS (ANÁLISES INDIVIDUAIS)* 📉\n\n"
                     f"🟢 Acertos: *{ESTATISTICAS['acertos']}*\n"
                     f"🔴 Erros: *{ESTATISTICAS['erros']}*\n"
                     f"🟡 Reembolsos (Void): *{ESTATISTICAS['reembolsos']}*\n\n"
-                    f"🎯 *Taxa de Assertividade:* `{taxa}%`"
+                    f"🎯 *Taxa de Assertividade:* `{taxa}%`\n"
+                    f"💡 *(Os bingos não entram nesta contagem)*"
                 )
+            elif texto_usuario.startswith("/green") or texto_usuario.startswith("/acerto"):
+                ESTATISTICAS["acertos"] += 1
+                taxa = calcular_taxa_assertividade()
+                enviar_mensagem(chat_id, f"✅ *Green computado com sucesso!*\n\n🟢 Acertos: {ESTATISTICAS['acertos']} | 🔴 Erros: {ESTATISTICAS['erros']}\n🎯 Nova Taxa: `{taxa}%`")
+            elif texto_usuario.startswith("/red") or texto_usuario.startswith("/erro"):
+                ESTATISTICAS["erros"] += 1
+                taxa = calcular_taxa_assertividade()
+                enviar_mensagem(chat_id, f"❌ *Red computado!*\n\n🟢 Acertos: {ESTATISTICAS['acertos']} | 🔴 Erros: {ESTATISTICAS['erros']}\n🎯 Nova Taxa: `{taxa}%`")
+            elif texto_usuario.startswith("/void") or texto_usuario.startswith("/reembolso"):
+                ESTATISTICAS["reembolsos"] += 1
+                taxa = calcular_taxa_assertividade()
+                enviar_mensagem(chat_id, f"🟡 *Reembolso computado!*\n\n🟢 Acertos: {ESTATISTICAS['acertos']} | 🔴 Erros: {ESTATISTICAS['erros']} | 🟡 Reembolsos: {ESTATISTICAS['reembolsos']}\n🎯 Nova Taxa: `{taxa}%`")
             elif "/status" in texto_usuario:
                 uptime_minutos = int((time.time() - START_TIME) / 60)
                 enviar_mensagem(
@@ -309,8 +325,11 @@ def webhook():
                 enviar_mensagem(
                     chat_id,
                     "📖 *Central de Ajuda Kakaroto:*\n"
-                    "• Use `/odds` para análises individuais baseadas em Betano, 365 e Superbet.\n"
-                    "• Use `/bingo` para gerar os 2 bilhetes moderados (Odds 3 a 6) e os 2 bilhetes bomba (Odds 25 a 35 com 5 a 8 seleções de múltiplas ligas)."
+                    "• `/odds` ➔ Análise avulsa.\n"
+                    "• `/bingo` ➔ Bilhetes automáticos.\n"
+                    "• `/green` ou `/acerto` ➔ Soma +1 acerto nas estatísticas.\n"
+                    "• `/red` ou `/erro` ➔ Soma +1 erro nas estatísticas.\n"
+                    "• `/void` ou `/reembolso` ➔ Soma +1 reembolso."
                 )
             else:
                 enviar_mensagem(
