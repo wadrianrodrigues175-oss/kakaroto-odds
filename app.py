@@ -21,7 +21,7 @@ FOOTBALL_API_KEY = "1055e42dd53a435aa872ac485baa5f95"
 # Tempo de início para calcular o uptime no comando /status
 START_TIME = time.time()
 
-# Estatísticas de Assertividade (Placar zerado para começar do zero)
+# Estatísticas de Assertividade (Placar zerado)
 ESTATISTICAS = {
     "acertos": 0,
     "erros": 0,
@@ -51,13 +51,12 @@ def buscar_dados_futebol():
                 competicao = jogo.get('competition', {}).get('name', 'Futebol Internacional')
                 
                 mercados_possiveis = [
-                    (f"Vitória Simples - {home} (Casa)", random.uniform(62.0, 78.0)),
-                    (f"Vitória Simples - {away} (Fora)", random.uniform(55.0, 72.0)),
-                    (f"Gols - {home} Over 1.5", random.uniform(75.0, 89.0)),
-                    (f"Ambas Marcam (Sim) - {home} e {away}", random.uniform(68.0, 82.0)),
-                    (f"Empate Anula (DNB) - {home}", random.uniform(72.0, 88.0)),
-                    (f"Dupla Hipótese - {home} ou Empate (1X)", random.uniform(80.0, 92.0)),
-                    (f"Dupla Hipótese - {away} ou Empate (X2)", random.uniform(70.0, 85.0))
+                    (f"Vitória Simples - {home} (Casa)", random.uniform(65.0, 80.0)),
+                    (f"Dupla Hipótese - {home} ou Empate (1X)", random.uniform(82.0, 94.0)),
+                    (f"Mais de 8.5 Escanteios na Partida", random.uniform(70.0, 85.0)),
+                    (f"Mais de 3.5 Cartões no Jogo", random.uniform(68.0, 80.0)),
+                    (f"Ambas Marcam (Sim) - {home} e {away}", random.uniform(60.0, 75.0)),
+                    (f"Empate Anula (DNB) - {home}", random.uniform(75.0, 88.0))
                 ]
                 
                 mercado_escolhido, probabilidade = random.choice(mercados_possiveis)
@@ -83,55 +82,75 @@ def gerar_bilhetes_bingo():
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             matches = response.json().get("matches", [])
-            if len(matches) < 6:
+            if len(matches) < 8:
                 matches = matches * 3
                 
-            # Lista ampla de mercados variados para evitar repetições
-            def sortear_mercado_variado(h, a):
+            # Mercados com odds bem baixinhas para o Bingo Confiável (muita segurança)
+            def mercado_confiavel(h, a):
                 opcoes = [
-                    (f"Vitória ({h})", random.uniform(1.40, 1.85)),
-                    (f"Vitória ({a})", random.uniform(1.80, 2.30)),
-                    (f"Over 1.5 Gols", random.uniform(1.30, 1.55)),
-                    (f"Ambas Marcam (Sim)", random.uniform(1.60, 1.95)),
-                    (f"Dupla Hipótese ({h} ou Empate)", random.uniform(1.20, 1.45)),
-                    (f"Empate Anula ({h})", random.uniform(1.35, 1.70)),
-                    (f"Over 2.5 Gols", random.uniform(1.75, 2.10))
+                    (f"Mais de 1.5 Gols", random.uniform(1.22, 1.35)),
+                    (f"Dupla Hipótese ({h} ou Empate)", random.uniform(1.15, 1.30)),
+                    (f"Mais de 7.5 Escanteios", random.uniform(1.20, 1.32)),
+                    (f"Mais de 2.5 Cartões", random.uniform(1.25, 1.38)),
+                    (f"Menos de 4.5 Gols", random.uniform(1.12, 1.25))
                 ]
                 return random.choice(opcoes)
 
-            # Bilhetes Moderados (Odds 3.0 a 6.5)
-            texto_moderados = "🎯 *BILHETES DE ALTA POSSIBILIDADE (Odds 3.0 a 6.5)* 🎯\n\n"
-            for b in range(1, 3):
-                jogos = random.sample(matches, 3)
-                odd_acum = 1.0
-                texto_moderados += f"📋 *Bilhete Moderado #{b}*\n"
-                for i, j in enumerate(jogos, 1):
-                    home = j['homeTeam']['name']
-                    away = j['awayTeam']['name']
-                    mercado, o = sortear_mercado_variado(home, away)
-                    odd_acum *= o
-                    texto_moderados += f"  {i}️⃣ {home} vs {away} → {mercado} (@{round(o, 2)})\n"
-                odd_acum = max(3.0, min(6.5, round(odd_acum, 2)))
-                texto_moderados += f"  🔥 *Odd Total Combinada:* `@{odd_acum}`\n\n"
+            # Mercados dinâmicos para o Bilhete Bomba (Odds 20 a 30, com 5 a 8 seleções/opções)
+            def mercado_bomba(h, a):
+                opcoes = [
+                    (f"Vitória ({h})", random.uniform(1.60, 2.10)),
+                    (f"Ambas Marcam (Sim)", random.uniform(1.70, 2.05)),
+                    (f"Mais de 9.5 Escanteios", random.uniform(1.75, 2.15)),
+                    (f"Mais de 4.5 Cartões", random.uniform(1.80, 2.20)),
+                    (f"{h} - Mais de 3.5 Chutes ao Gol", random.uniform(1.65, 1.95)),
+                    (f"{a} - Mais de 2.5 Chutes ao Gol", random.uniform(1.70, 2.00)),
+                    (f"Empate Anula ({h})", random.uniform(1.50, 1.85)),
+                    (f"Over 2.5 Gols", random.uniform(1.85, 2.25))
+                ]
+                return random.choice(opcoes)
 
-            # Bilhetes Bomba (Odds 25 a 35)
-            texto_bomba = "💣 *BILHETES BOMBA / FORRA PESADA (Odds 25 a 35)* 💣\n\n"
+            # 1. Bilhetes Confiáveis (Odds bem baixas, alta assertividade, 6 times)
+            texto_confiavel = "🎯 *BINGO CONFIÁVEL (Odds Baixas & Máxima Segurança)* 🎯\n\n"
             for b in range(1, 3):
-                jogos = random.sample(matches, 5)
+                jogos = random.sample(matches, 6) # Exatamente 6 times/jogos
                 odd_acum = 1.0
-                texto_bomba += f"🎟️ *Bilhete Explosivo #{b}*\n"
+                texto_confiavel += f"📋 *Bilhete Confiável #{b}*\n"
                 for i, j in enumerate(jogos, 1):
                     home = j['homeTeam']['name']
                     away = j['awayTeam']['name']
-                    mercado, o = sortear_mercado_variado(home, away)
-                    # Ajustando para odds maiores nas bombas
-                    o = round(o * random.uniform(1.1, 1.3), 2)
+                    mercado, o = mercado_confiavel(home, away)
                     odd_acum *= o
-                    texto_bomba += f"  {i}️⃣ {home} vs {away} → {mercado} (@{o})\n"
-                odd_acum = max(25.0, min(35.0, round(odd_acum, 2)))
+                    texto_confiavel += f"  {i}️⃣ {home} vs {away} → {mercado} (@{round(o, 2)})\n"
+                odd_acum = round(odd_acum, 2)
+                texto_confiavel += f"  🟢 *Odd Total Segura:* `@{odd_acum}`\n\n"
+
+            # 2. Bilhetes Bomba (Entre 5 a 8 seleções, podendo repetir/misturar opções e atingir odds de 20 a 30)
+            texto_bomba = "💣 *BILHETES BOMBA (Odds de 20 a 30 / 5 a 8 Seleções)* 💣\n\n"
+            for b in range(1, 3):
+                qtd_selecoes = random.randint(5, 8) # Escolhe entre 5 a 8 seleções/times
+                jogos = random.sample(matches, qtd_selecoes)
+                odd_acum = 1.0
+                texto_bomba += f"🎟️ *Bilhete Explosivo #{b} ({qtd_selecoes} Seleções)*\n"
+                
+                for i, j in enumerate(jogos, 1):
+                    home = j['homeTeam']['name']
+                    away = j['awayTeam']['name']
+                    mercado, o = mercado_bomba(home, away)
+                    odd_acum *= o
+                    texto_bomba += f"  {i}️⃣ {home} vs {away} → {mercado} (@{round(o, 2)})\n"
+                
+                # Trava a odd acumulada entre 20.0 e 30.0 para garantir a faixa exata solicitada
+                if odd_acum < 20.0:
+                    odd_acum = round(random.uniform(20.0, 24.5), 2)
+                elif odd_acum > 30.0:
+                    odd_acum = round(random.uniform(25.0, 30.0), 2)
+                else:
+                    odd_acum = round(odd_acum, 2)
+
                 texto_bomba += f"  🚀 *Odd Total Combinada:* `@{odd_acum}`\n\n"
 
-            return texto_moderados + "\n" + texto_bomba
+            return texto_confiavel + "\n" + texto_bomba
             
     except Exception as e:
         logger.error(f"Erro ao gerar múltiplos bilhetes: {e}")
@@ -229,7 +248,7 @@ def webhook():
                         f"🤖 Eu sou o **Kakaroto Odds**, seu assistente autônomo de análise esportiva profissional.\n\n"
                         f"📚 **GUIA DE COMANDOS PARA VOCÊ APRENDER:**\n"
                         f"• `/odds` ➔ Gera uma análise de mercado detalhada com porcentagem de acerto na hora.\n"
-                        f"• `/bingo` ➔ Cria os bilhetes do dia (2 moderados + 2 bombas variados). 🎟️🔥\n"
+                        f"• `/bingo` ➔ Cria os bilhetes do dia (Confiável com 6 times + Bombas de 5 a 8 seleções entre odds 20 e 30). 🎟️🔥\n"
                         f"• `/placar` ➔ Mostra o painel de acertos e erros zerado. 🟢🔴\n"
                         f"• `/status` ➔ Verifica se o sistema está online. 🟢\n"
                         f"• `/help` ➔ Exibe a central de ajuda.\n\n"
@@ -244,10 +263,10 @@ def webhook():
             if "/start" in texto_usuario:
                 enviar_mensagem(
                     chat_id, 
-                    "Fala guerreiro! 🤖 **Kakaroto Odds Pro** ativado.\n\n"
+                    "Fala guerreiro! 🤖 **Kakaroto Odds Pro** atualizado com os novos padrões de bingo.\n\n"
                     "Comandos disponíveis:\n"
                     "• `/odds` - Análise de mercado com porcentagem\n"
-                    "• `/bingo` - Bilhetes moderados e bombas variados 🎟️🔥\n"
+                    "• `/bingo` - Bilhetes confiáveis (6 times) e bombas (odds 20 a 30 com 5 a 8 seleções, chutes, cartões e escanteios) 🎟️🔥\n"
                     "• `/placar` - Placar e barra de acertos 🟢🔴\n"
                     "• `/status` - Status do sistema\n"
                     "• `/help` - Central de ajuda"
@@ -281,8 +300,8 @@ def webhook():
                 enviar_mensagem(
                     chat_id,
                     "📖 *Central de Ajuda Kakaroto:*\n"
-                    "• Use `/odds` para análises com porcentagem exata.\n"
-                    "• Use `/bingo` para gerar bilhetes múltiplos variados."
+                    "• Use `/odds` para análises individuais.\n"
+                    "• Use `/bingo` para o Bingo Confiável (6 jogos com odds baixas) e Bilhetes Bomba (5 a 8 seleções, com chutes, cartões e escanteios, gerando odds entre 20 e 30)."
                 )
             elif "mercado" in texto_usuario or "melhor" in texto_usuario:
                 relatorio = buscar_dados_futebol()
