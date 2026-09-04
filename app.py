@@ -1,16 +1,12 @@
 import os
-import threading
-import time
 import requests
 from flask import Flask, request
 
 app = Flask(__name__)
 
-# Credenciais preenchidas automaticamente para você
-TOKEN = "8766250524:AAHSg0XqJ5N05sW4q_z2k1K8lX1Y2z3a4b5" # (Usando o seu Token completo)
-CHAT_ID = "8752935420"
+# Suas credenciais oficiais
+TOKEN = "8766250524:AAEWp4kcchkyTq0eimlOzkrklnyv42fhZrE"
 FOOTBALL_API_KEY = "1055e42dd53a435aa872ac485baa5f95"
-RENDER_URL = "https://kakaroto-odds.onrender.com"
 
 
 def buscar_dados_futebol():
@@ -38,7 +34,10 @@ def buscar_dados_futebol():
 def enviar_mensagem(chat_id, texto):
   url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
   payload = {"chat_id": chat_id, "text": texto, "parse_mode": "Markdown"}
-  requests.post(url, json=payload)
+  try:
+    requests.post(url, json=payload)
+  except Exception as e:
+    print(f"Erro ao enviar mensagem: {e}")
 
 
 @app.route("/")
@@ -48,41 +47,32 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-  data = request.get_json()
-  if "message" in data:
-    chat_id = data["message"]["chat"]["id"]
-    texto_usuario = data["message"].get("text", "").lower()
+  try:
+    data = request.get_json(force=True, silent=True)
+    if data and "message" in data:
+      chat_id = data["message"]["chat"]["id"]
+      texto_usuario = data["message"].get("text", "").lower()
 
-    if "/start" in texto_usuario:
-      enviar_mensagem(
-          chat_id,
-          "Fala guerreiro! 🤖 Kakaroto Odds ativado com sucesso! Envie /odds"
-          " para ver as análises.",
-      )
-    elif "/odds" in texto_usuario:
-      relatorio = buscar_dados_futebol()
-      enviar_mensagem(chat_id, relatorio)
-    else:
-      enviar_mensagem(
-          chat_id,
-          "Comando não reconhecido. Use /start ou /odds para ver os comandos.",
-      )
+      if "/start" in texto_usuario:
+        enviar_mensagem(
+            chat_id,
+            "Fala guerreiro! 🤖 Kakaroto Odds ativado com sucesso! Envie /odds"
+            " para ver as análises.",
+        )
+      elif "/odds" in texto_usuario:
+        relatorio = buscar_dados_futebol()
+        enviar_mensagem(chat_id, relatorio)
+      else:
+        enviar_mensagem(
+            chat_id,
+            "Comando não reconhecido. Use /start ou /odds para ver os comandos.",
+        )
+  except Exception as e:
+    print(f"Erro no webhook: {e}")
 
   return "OK", 200
 
 
-def rotina_automatica():
-  while True:
-    time.sleep(14400)  # A cada 4 horas
-    relatorio = buscar_dados_futebol()
-    enviar_mensagem(CHAT_ID, relatorio)
-
-
 if __name__ == "__main__":
-  # Inicia a thread automática em segundo plano
-  t = threading.Thread(target=rotina_automatica)
-  t.daemon = True
-  t.start()
-
   port = int(os.environ.get("PORT", 5000))
   app.run(host="0.0.0.0", port=port)
