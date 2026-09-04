@@ -50,7 +50,7 @@ def buscar_jogos_ao_vivo():
     except Exception as e:
         return f"⚠️ Erro de conexão com a API: {e}"
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/webhook", methods=["GET", "POST"])
 def webhook():
     if request.method == "POST":
         data = request.json
