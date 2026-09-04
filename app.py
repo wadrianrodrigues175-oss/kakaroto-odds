@@ -117,9 +117,10 @@ def gerar_bilhetes_bingo_automaticos():
                 for i, j in enumerate(jogos, 1):
                     home = j['homeTeam']['name']
                     away = j['awayTeam']['name']
+                    comp = j.get('competition', {}).get('name', 'Liga Global')
                     mercado, o, prob = mercado_moderado(home, away)
                     odd_acum *= o
-                    texto_moderados += f"  *{i}️⃣ {home} vs {away}*\n"
+                    texto_moderados += f"  *{i}️⃣ {home} vs {away}* `({comp})`\n"
                     texto_moderados += f"     └ Mercado: `{mercado}`\n"
                     texto_moderados += f"     └ Odd: `@{o}` | Prob: `{prob}`\n"
                 
@@ -143,9 +144,10 @@ def gerar_bilhetes_bingo_automaticos():
                 for i, j in enumerate(jogos, 1):
                     home = j['homeTeam']['name']
                     away = j['awayTeam']['name']
+                    comp = j.get('competition', {}).get('name', 'Liga Global')
                     mercado, o, prob = mercado_bomba(home, away)
                     odd_acum *= o
-                    texto_bombas += f"  *{i}️⃣ {home} vs {away}*\n"
+                    texto_bombas += f"  *{i}️⃣ {home} vs {away}* `({comp})`\n"
                     texto_bombas += f"     └ Mercado: `{mercado}`\n"
                     texto_bombas += f"     └ Odd: `@{o}` | Prob: `{prob}`\n"
                 
@@ -256,7 +258,7 @@ def webhook():
                         f"🤖 Eu sou o **Kakaroto Odds**, seu assistente autônomo de análise esportiva profissional.\n\n"
                         f"📚 **GUIA DE COMANDOS PARA VOCÊ APRENDER:**\n"
                         f"• `/odds` ➔ Gera uma análise de mercado detalhada.\n"
-                        f"• `/bingo` ➔ Cria automaticamente bilhetes moderados (Odds 3 a 6) e bombas (Odds 25 a 35 com 5 a 8 seleções). 🎟️🔥\n"
+                        f"• `/bingo` ➔ Cria automaticamente bilhetes moderados (Odds 3 a 6) e bombas (Odds 25 a 35 com 5 a 8 seleções de várias ligas mundiais). 🎟️🔥\n"
                         f"• `/placar` ➔ Mostra o painel de acertos e erros zerado. 🟢🔴\n"
                         f"• `/status` ➔ Verifica se o sistema está online. 🟢\n"
                         f"• `/help` ➔ Exibe a central de ajuda.\n\n"
@@ -271,10 +273,10 @@ def webhook():
             if "/start" in texto_usuario:
                 enviar_mensagem(
                     chat_id, 
-                    "Fala guerreiro! 🤖 **Kakaroto Odds Pro** ativado com o visual moderno e bilhetes automáticos.\n\n"
+                    "Fala guerreiro! 🤖 **Kakaroto Odds Pro** atualizado com o leque expandido de ligas globais.\n\n"
                     "Comandos disponíveis:\n"
                     "• `/odds` - Análise de mercado detalhada\n"
-                    "• `/bingo` - Bilhetes automáticos (Odds 3-6 e Bombas 25-35 com 5-8 seleções) 🎟️🔥\n"
+                    "• `/bingo` - Bilhetes automáticos (Odds 3-6 e Bombas 25-35 com 5-8 seleções abrangendo várias ligas) 🎟️🔥\n"
                     "• `/placar` - Placar e barra de acertos 🟢🔴\n"
                     "• `/status` - Status do sistema\n"
                     "• `/help` - Central de ajuda"
@@ -308,7 +310,7 @@ def webhook():
                     chat_id,
                     "📖 *Central de Ajuda Kakaroto:*\n"
                     "• Use `/odds` para análises individuais baseadas em Betano, 365 e Superbet.\n"
-                    "• Use `/bingo` para gerar os 2 bilhetes moderados (Odds 3 a 6) e os 2 bilhetes bomba (Odds 25 a 35 com 5 a 8 seleções)."
+                    "• Use `/bingo` para gerar os 2 bilhetes moderados (Odds 3 a 6) e os 2 bilhetes bomba (Odds 25 a 35 com 5 a 8 seleções de múltiplas ligas)."
                 )
             else:
                 enviar_mensagem(
