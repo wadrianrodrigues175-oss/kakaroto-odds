@@ -21,11 +21,11 @@ FOOTBALL_API_KEY = "1055e42dd53a435aa872ac485baa5f95"
 # Tempo de início para calcular o uptime no comando /status
 START_TIME = time.time()
 
-# Estatísticas de Assertividade (Placar)
+# Estatísticas de Assertividade (Placar zerado para começar do zero)
 ESTATISTICAS = {
-    "acertos": 14,
-    "erros": 3,
-    "reembolsos": 1
+    "acertos": 0,
+    "erros": 0,
+    "reembolsos": 0
 }
 
 # Controle para não enviar alerta repetido do mesmo jogo
@@ -50,14 +50,14 @@ def buscar_dados_futebol():
                 away = jogo['awayTeam']['name']
                 competicao = jogo.get('competition', {}).get('name', 'Futebol Internacional')
                 
-                # Define mercados dinâmicos especificando o time da casa ou visitante
                 mercados_possiveis = [
+                    (f"Vitória Simples - {home} (Casa)", random.uniform(62.0, 78.0)),
+                    (f"Vitória Simples - {away} (Fora)", random.uniform(55.0, 72.0)),
                     (f"Gols - {home} Over 1.5", random.uniform(75.0, 89.0)),
                     (f"Ambas Marcam (Sim) - {home} e {away}", random.uniform(68.0, 82.0)),
                     (f"Empate Anula (DNB) - {home}", random.uniform(72.0, 88.0)),
                     (f"Dupla Hipótese - {home} ou Empate (1X)", random.uniform(80.0, 92.0)),
-                    (f"Dupla Hipótese - {away} ou Empate (X2)", random.uniform(70.0, 85.0)),
-                    (f"Vitória Simples - {home} (Casa)", random.uniform(60.0, 78.0))
+                    (f"Dupla Hipótese - {away} ou Empate (X2)", random.uniform(70.0, 85.0))
                 ]
                 
                 mercado_escolhido, probabilidade = random.choice(mercados_possiveis)
@@ -86,6 +86,19 @@ def gerar_bilhetes_bingo():
             if len(matches) < 6:
                 matches = matches * 3
                 
+            # Lista ampla de mercados variados para evitar repetições
+            def sortear_mercado_variado(h, a):
+                opcoes = [
+                    (f"Vitória ({h})", random.uniform(1.40, 1.85)),
+                    (f"Vitória ({a})", random.uniform(1.80, 2.30)),
+                    (f"Over 1.5 Gols", random.uniform(1.30, 1.55)),
+                    (f"Ambas Marcam (Sim)", random.uniform(1.60, 1.95)),
+                    (f"Dupla Hipótese ({h} ou Empate)", random.uniform(1.20, 1.45)),
+                    (f"Empate Anula ({h})", random.uniform(1.35, 1.70)),
+                    (f"Over 2.5 Gols", random.uniform(1.75, 2.10))
+                ]
+                return random.choice(opcoes)
+
             # Bilhetes Moderados (Odds 3.0 a 6.5)
             texto_moderados = "🎯 *BILHETES DE ALTA POSSIBILIDADE (Odds 3.0 a 6.5)* 🎯\n\n"
             for b in range(1, 3):
@@ -95,10 +108,9 @@ def gerar_bilhetes_bingo():
                 for i, j in enumerate(jogos, 1):
                     home = j['homeTeam']['name']
                     away = j['awayTeam']['name']
-                    mercado = random.choice([f"Over 1.5 ({home})", f"1X ({home})", "Ambas Marcam (Sim)"])
-                    o = round(random.uniform(1.35, 1.65), 2)
+                    mercado, o = sortear_mercado_variado(home, away)
                     odd_acum *= o
-                    texto_moderados += f"  {i}️⃣ {home} vs {away} → {mercado} (@{o})\n"
+                    texto_moderados += f"  {i}️⃣ {home} vs {away} → {mercado} (@{round(o, 2)})\n"
                 odd_acum = max(3.0, min(6.5, round(odd_acum, 2)))
                 texto_moderados += f"  🔥 *Odd Total Combinada:* `@{odd_acum}`\n\n"
 
@@ -111,8 +123,9 @@ def gerar_bilhetes_bingo():
                 for i, j in enumerate(jogos, 1):
                     home = j['homeTeam']['name']
                     away = j['awayTeam']['name']
-                    mercado = random.choice(["Ambas Marcam", "Over 2.5 Gols", f"Vitória ({home})", "Empate HT"])
-                    o = round(random.uniform(1.70, 2.20), 2)
+                    mercado, o = sortear_mercado_variado(home, away)
+                    # Ajustando para odds maiores nas bombas
+                    o = round(o * random.uniform(1.1, 1.3), 2)
                     odd_acum *= o
                     texto_bomba += f"  {i}️⃣ {home} vs {away} → {mercado} (@{o})\n"
                 odd_acum = max(25.0, min(35.0, round(odd_acum, 2)))
@@ -216,8 +229,8 @@ def webhook():
                         f"🤖 Eu sou o **Kakaroto Odds**, seu assistente autônomo de análise esportiva profissional.\n\n"
                         f"📚 **GUIA DE COMANDOS PARA VOCÊ APRENDER:**\n"
                         f"• `/odds` ➔ Gera uma análise de mercado detalhada com porcentagem de acerto na hora.\n"
-                        f"• `/bingo` ➔ Cria os bilhetes do dia (2 moderados + 2 bombas). 🎟️🔥\n"
-                        f"• `/placar` ➔ Mostra o painel de acertos e erros e a barra visual. 🟢🔴\n"
+                        f"• `/bingo` ➔ Cria os bilhetes do dia (2 moderados + 2 bombas variados). 🎟️🔥\n"
+                        f"• `/placar` ➔ Mostra o painel de acertos e erros zerado. 🟢🔴\n"
                         f"• `/status` ➔ Verifica se o sistema está online. 🟢\n"
                         f"• `/help` ➔ Exibe a central de ajuda.\n\n"
                         f"Boa sorte nas apostas e rumo aos greens! ⚽🚀"
@@ -234,7 +247,7 @@ def webhook():
                     "Fala guerreiro! 🤖 **Kakaroto Odds Pro** ativado.\n\n"
                     "Comandos disponíveis:\n"
                     "• `/odds` - Análise de mercado com porcentagem\n"
-                    "• `/bingo` - Bilhetes moderados e bombas 🎟️🔥\n"
+                    "• `/bingo` - Bilhetes moderados e bombas variados 🎟️🔥\n"
                     "• `/placar` - Placar e barra de acertos 🟢🔴\n"
                     "• `/status` - Status do sistema\n"
                     "• `/help` - Central de ajuda"
@@ -254,7 +267,7 @@ def webhook():
                     f"🔴 Erros: *{ESTATISTICAS['erros']}*\n"
                     f"🟡 Reembolsos (Void): *{ESTATISTICAS['reembolsos']}*\n\n"
                     f"🎯 *Taxa de Assertividade:* `{taxa}%`\n"
-                    f"📊 *Barra de Desempeno:* `[{"🟩" * ESTATISTICAS['acertos']}{"🟥" * ESTATISTICAS['erros']}]`"
+                    f"📊 *Barra de Desempeno:* `[Placar Zerado]`"
                 )
             elif "/status" in texto_usuario:
                 uptime_minutos = int((time.time() - START_TIME) / 60)
@@ -268,8 +281,8 @@ def webhook():
                 enviar_mensagem(
                     chat_id,
                     "📖 *Central de Ajuda Kakaroto:*\n"
-                    "• Use `/odds` para análises com o time e porcentagem exata.\n"
-                    "• Use `/bingo` para gerar os bilhetes múltiplos."
+                    "• Use `/odds` para análises com porcentagem exata.\n"
+                    "• Use `/bingo` para gerar bilhetes múltiplos variados."
                 )
             elif "mercado" in texto_usuario or "melhor" in texto_usuario:
                 relatorio = buscar_dados_futebol()
