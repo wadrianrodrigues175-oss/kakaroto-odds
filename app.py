@@ -22,14 +22,13 @@ FOOTBALL_API_KEY = "1055e42dd53a435aa872ac485baa5f95"
 # Tempo de início para calcular o uptime no comando /status
 START_TIME = time.time()
 
-# Estatísticas de Assertividade (Foco exclusivo nas análises individuais)
+# Estatísticas de Assertividade
 ESTATISTICAS = {
     "acertos": 0,
     "erros": 0,
     "reembolsos": 0
 }
 
-# Controle para não enviar alerta repetido do mesmo jogo
 jogos_alertados = set()
 
 def obter_data_brasil():
@@ -226,12 +225,12 @@ def analisar_foto_bilhete(chat_id):
         "📸 *Análise de Imagem do Bilhete (Kakaroto Vision):*\n\n"
         "🔍 Recebi o print do seu bilhete! Analisando as seleções:\n"
         "• Vejo que montou uma múltipla interessante.\n"
-        "⚠️ *Aviso do Kakaroto:* Cuidado com jogos de alta imprevisibilidade na Série A/B. A odd total está atrativa, mas recomendo proteger uma das seleções principais com *Empate Anula* ou reduzir o número de equipes para dar mais segurança à sua banca! ⚽💡",
+        "⚠️ *Aviso do Kakaroto:* Cuidado com jogos de alta imprevisibilidade! Recomendo proteger uma das seleções principais com *Empate Anula* ou reduzir o número de equipes para dar mais segurança à sua banca! ⚽💡",
         
         "📸 *Análise de Imagem do Bilhete (Kakaroto Vision):*\n\n"
         "🔍 Print escaneado com sucesso!\n"
-        "✅ Suas escolhas estão bem distribuídas nos mercados de gols e favoritos.\n"
-        "🔥 *Dica Tática:* As cotações combinadas estão fortes, mas fique atento aos cartões e faltas se houver clássicos no meio da sua lista. Boa sorte rumo ao green! 🚀"
+        "✅ Suas escolhas estão bem distribuídas.\n"
+        "🔥 *Dica Tática:* As cotações combinadas estão fortes. Boa sorte rumo ao green! 🚀"
     ]
     enviar_mensagem(chat_id, random.choice(analises_possiveis))
 
@@ -286,7 +285,7 @@ def rotina_automatica():
                 contador_ciclo = 0
                 if random.choice([True, False]):
                     analise = buscar_dados_futebol()
-                    enviar_mensagem(CHAT_ID, f"🔄 *Giro Automático de Mercado (Brasileirão & Ligas):*\n\n{analise}")
+                    enviar_mensagem(CHAT_ID, f"🔄 *Giro Automático de Mercado:*\n\n{analise}")
                 else:
                     bilhetes = gerar_bilhetes_bingo_automaticos()
                     enviar_mensagem(CHAT_ID, f"🎟️ *Sugestão de Bilhetes Automática:* \n\n{bilhetes}")
@@ -317,8 +316,8 @@ def webhook():
                     nome = novo_membro.get("first_name", "Guerreiro")
                     boas_vindas = (
                         f"👋 Seja muito bem-vindo(a) ao grupo, **{nome}**!\n\n"
-                        f"🤖 Eu sou o **Kakaroto Odds**, integrado com o **Brasileirão Série A e Série B**, além das principais ligas do mundo!\n\n"
-                        f"📸 *NOVIDADE:* Você pode mandar o print/foto do seu bilhete no chat que eu analiso para você!\n\n"
+                        f"🤖 Eu sou o **Kakaroto Odds**!\n\n"
+                        f"📸 *NOVIDADE:* Você pode mandar o print/foto do seu bilhete no chat que eu analiso!\n\n"
                         f"📚 **COMANDOS:**\n"
                         f"• `/odds` ➔ Análise de mercado.\n"
                         f"• `/bingo` ➔ Bilhetes automáticos. 🎟️🔥\n"
@@ -335,16 +334,16 @@ def webhook():
             if "/start" in texto_usuario:
                 enviar_mensagem(
                     chat_id, 
-                    "Fala guerreiro! 🤖 **Kakaroto Odds Pro** atualizado e operando com foco total nos **próximos jogos do dia** (Série A, Série B e Ligas Globais).\n\n"
+                    "Fala guerreiro! 🤖 **Kakaroto Odds Pro** operando com foco total.\n\n"
                     "Comandos disponíveis:\n"
                     "• `/odds` - Análise de mercado detalhada\n"
-                    "• `/bingo` - Bilhetes automáticos (Odds 3-6 e Bombas 25-35) 🎟️🔥\n"
+                    "• `/bingo` - Bilhetes automáticos 🎟️🔥\n"
                     "• `/placar` - Placar e barra de acertos 🟢🔴\n"
-                    "• `/green` (ou `/acerto`) - Adiciona 1 acerto ao placar ✅\n"
-                    "• `/red` (ou `/erro`) - Adiciona 1 erro ao placar ❌\n"
+                    "• `/green` (ou `/acerto`) - Adiciona 1 acerto ✅\n"
+                    "• `/red` (ou `/erro`) - Adiciona 1 erro ❌\n"
                     "• `/void` (ou `/reembolso`) - Adiciona 1 reembolso 🟡\n"
                     "• `/reiniciar` - Reinicia o bot 🔄\n"
-                    "• *Envie uma foto/print de um bilhete* para eu analisar! 📸"
+                    "• *Envie uma foto de bilhete* para eu analisar! 📸"
                 )
             elif "/odds" in texto_usuario:
                 relatorio = buscar_dados_futebol()
@@ -356,32 +355,31 @@ def webhook():
                 taxa = calcular_taxa_assertividade()
                 enviar_mensagem(
                     chat_id,
-                    f"📈 *PLACAR DE ACERTOS (ANÁLISES INDIVIDUAIS)* 📉\n\n"
+                    f"📈 *PLACAR DE ACERTOS* 📉\n\n"
                     f"🟢 Acertos: *{ESTATISTICAS['acertos']}*\n"
                     f"🔴 Erros: *{ESTATISTICAS['erros']}*\n"
-                    f"🟡 Reembolsos (Void): *{ESTATISTICAS['reembolsos']}*\n\n"
-                    f"🎯 *Taxa de Assertividade:* `{taxa}%`\n"
-                    f"💡 *(Os bingos não entram nesta contagem)*"
+                    f"🟡 Reembolsos: *{ESTATISTICAS['reembolsos']}*\n\n"
+                    f"🎯 *Taxa de Assertividade:* `{taxa}%`"
                 )
             elif texto_usuario.startswith("/green") or texto_usuario.startswith("/acerto"):
                 ESTATISTICAS["acertos"] += 1
                 taxa = calcular_taxa_assertividade()
-                enviar_mensagem(chat_id, f"✅ *Green computado com sucesso!*\n\n🟢 Acertos: {ESTATISTICAS['acertos']} | 🔴 Erros: {ESTATISTICAS['erros']}\n🎯 Nova Taxa: `{taxa}%`")
+                enviar_mensagem(chat_id, f"✅ *Green computado!*\n🟢 Acertos: {ESTATISTICAS['acertos']} | 🔴 Erros: {ESTATISTICAS['erros']}\n🎯 Nova Taxa: `{taxa}%`")
             elif texto_usuario.startswith("/red") or texto_usuario.startswith("/erro"):
                 ESTATISTICAS["erros"] += 1
                 taxa = calcular_taxa_assertividade()
-                enviar_mensagem(chat_id, f"❌ *Red computado!*\n\n🟢 Acertos: {ESTATISTICAS['acertos']} | 🔴 Erros: {ESTATISTICAS['erros']}\n🎯 Nova Taxa: `{taxa}%`")
+                enviar_mensagem(chat_id, f"❌ *Red computado!*\n🟢 Acertos: {ESTATISTICAS['acertos']} | 🔴 Erros: {ESTATISTICAS['erros']}\n🎯 Nova Taxa: `{taxa}%`")
             elif texto_usuario.startswith("/void") or texto_usuario.startswith("/reembolso"):
                 ESTATISTICAS["reembolsos"] += 1
                 taxa = calcular_taxa_assertividade()
-                enviar_mensagem(chat_id, f"🟡 *Reembolso computado!*\n\n🟢 Acertos: {ESTATISTICAS['acertos']} | 🔴 Erros: {ESTATISTICAS['erros']} | 🟡 Reembolsos: {ESTATISTICAS['reembolsos']}\n🎯 Nova Taxa: `{taxa}%`")
+                enviar_mensagem(chat_id, f"🟡 *Reembolso computado!*\n🟢 Acertos: {ESTATISTICAS['acertos']} | 🔴 Erros: {ESTATISTICAS['erros']} | 🟡 Reembolsos: {ESTATISTICAS['reembolsos']}\n🎯 Nova Taxa: `{taxa}%`")
             elif "/reiniciar" in texto_usuario or "/restart" in texto_usuario:
                 enviar_mensagem(
                     chat_id,
                     "🔄 *Reiniciando o Kakaroto Odds Pro...*\n"
                     "O sistema está aplicando um reboot forçado. Volto em instantes! ⚡"
                 )
-                logger.info(f"Comando de reinicialização acionado pelo chat {chat_id}. Encerrando processo...")
+                logger.info(f"Comando de reinicialização acionado pelo chat {chat_id}.")
                 time.sleep(1)
                 os._exit(0)
             elif "/status" in texto_usuario:
@@ -389,29 +387,26 @@ def webhook():
                 enviar_mensagem(
                     chat_id, 
                     f"🟢 *Status do Bot: Online*\n"
-                    f"⏱️ Tempo ligado: {uptime_minutos} minutos\n"
-                    f"⚙️ Webhook, Threads e Filtro de Horário operando."
+                    f"⏱️ Tempo ligado: {uptime_minutos} minutos"
                 )
             elif "/help" in texto_usuario or "ajuda" in texto_usuario:
                 enviar_mensagem(
                     chat_id,
                     "📖 *Central de Ajuda Kakaroto:*\n"
-                    "• `/odds` ➔ Análise avulsa (focada em jogos futuros).\n"
-                    "• `/bingo` ➔ Bilhetes automáticos do dia.\n"
+                    "• `/odds` ➔ Análise avulsa.\n"
+                    "• `/bingo` ➔ Bilhetes automáticos.\n"
                     "• `/reiniciar` ➔ Reinicia o bot.\n"
-                    "• Envie um **print/foto** de qualquer bilhete direto no chat para eu avaliar a sua aposta! 📸🔥"
+                    "• Envie um **print/foto** de bilhete direto no chat! 📸🔥"
                 )
             else:
                 enviar_mensagem(
                     chat_id, 
-                    "Comando não reconhecido. Digite `/help` para ver a lista de comandos ou envie uma foto do seu bilhete."
+                    "Comando não reconhecido. Digite `/help` para ver os comandos."
                 )
     except Exception as e:
         logger.error(f"Erro no webhook: {e}")
 
     return "OK", 200
 
-# Inicializa a thread de rotina automática ao iniciar o script
 t = threading.Thread(target=rotina_automatica, daemon=True)
 t.start()
-gunic
