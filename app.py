@@ -4,12 +4,20 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-# Token oficial do seu bot configurado corretamente
 BOT_TOKEN = "8766250524:AAEWp4kcchkyTq0eiml0zkrklnyv42fhZrE"
-API_KEY = "1055..." # Cole sua chave da football-data.org aqui se tiver
+API_KEY = "1055..."
 HEADERS = {"X-Auth-Token": API_KEY}
 
 TELEGRAM_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+RENDER_URL = "https://kakaroto-odds.onrender.com/webhook"
+
+# Ativa o webhook automaticamente ao iniciar o app
+def configurar_webhook():
+    url_reg = f"https://api.telegram.org/bot{BOT_TOKEN}/setWebhook?url={RENDER_URL}"
+    try:
+        requests.get(url_reg)
+    except:
+        pass
 
 def buscar_jogos_ao_vivo():
     url = "https://api.football-data.org/v4/matches?status=LIVE"
@@ -63,4 +71,5 @@ def webhook():
     return "OK", 200
 
 if __name__ == "__main__":
+    configurar_webhook()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
