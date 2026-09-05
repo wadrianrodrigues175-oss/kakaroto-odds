@@ -4,24 +4,12 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-# Credenciais e Configurações
-BOT_TOKEN = "8766..."
-CHAT_ID = "8752..."
-API_KEY = "1055..."
+# Token oficial do seu bot configurado corretamente
+BOT_TOKEN = "8766250524:AAEWp4kcchkyTq0eiml0zkrklnyv42fhZrE"
+API_KEY = "1055..." # Cole sua chave da football-data.org aqui se tiver
 HEADERS = {"X-Auth-Token": API_KEY}
 
 TELEGRAM_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-
-def enviar_mensagem(texto):
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": texto,
-        "parse_mode": "Markdown"
-    }
-    try:
-        requests.post(TELEGRAM_URL, json=payload)
-    except Exception as e:
-        print(f"Erro ao enviar mensagem: {e}")
 
 def buscar_jogos_ao_vivo():
     url = "https://api.football-data.org/v4/matches?status=LIVE"
@@ -50,24 +38,29 @@ def buscar_jogos_ao_vivo():
     except Exception as e:
         return f"⚠️ Erro de conexão com a API: {e}"
 
-@app.route("/webhook", methods=["GET", "POST"])
-def webhook():
-    if request.method == "POST":
-        data = request.json
-        if data and "message" in data:
-            chat_id = data["message"]["chat"]["id"]
-            text = data["message"].get("text", "").lower()
-            
-            if "/aovivo" in text:
-                resultado = buscar_jogos_ao_vivo()
-                payload = {"chat_id": chat_id, "text": resultado, "parse_mode": "Markdown"}
-                requests.post(TELEGRAM_URL, json=payload)
-            elif "/odds" in text:
-                payload = {"chat_id": chat_id, "text": "⚽ Kakaroto Odds: Nenhuma partida futura disponível para hoje no momento.", "parse_mode": "Markdown"}
-                requests.post(TELEGRAM_URL, json=payload)
-                
-        return "OK", 200
+@app.route("/", methods=["GET"])
+def home():
     return "Kakaroto Odds Bot está rodando com sucesso!", 200
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    data = request.json
+    if data and "message" in data:
+        chat_id = data["message"]["chat"]["id"]
+        text = data["message"].get("text", "").lower()
+        
+        if "/aovivo" in text:
+            resultado = buscar_jogos_ao_vivo()
+            payload = {"chat_id": chat_id, "text": resultado, "parse_mode": "Markdown"}
+            requests.post(TELEGRAM_URL, json=payload)
+        elif "/odds" in text:
+            payload = {"chat_id": chat_id, "text": "⚽ Kakaroto Odds: Nenhuma partida futura disponível para hoje no momento.", "parse_mode": "Markdown"}
+            requests.post(TELEGRAM_URL, json=payload)
+        else:
+            payload = {"chat_id": chat_id, "text": f"🤖 Bot ativo! Seu Chat ID é: `{chat_id}`", "parse_mode": "Markdown"}
+            requests.post(TELEGRAM_URL, json=payload)
+            
+    return "OK", 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
