@@ -21,14 +21,15 @@ FOOTBALL_API_KEY = "1055e42dd53a435aa872ac485baa5f95"
 # Tempo de início para calcular o uptime no comando /status
 START_TIME = time.time()
 
-# Estatísticas de Assertividade (Placar zerado para começar do zero)
+# Estatísticas de Assertividade
 ESTATISTICAS = {
     "acertos": 0,
     "erros": 0,
     "reembolsos": 0
 }
 
-# Controle para não enviar alerta repetido do mesmo jogo
+# Controles para evitar repetições
+jogos_analisados_recentemente = set()
 jogos_alertados = set()
 
 def calcular_taxa_assertividade():
@@ -45,11 +46,22 @@ def buscar_dados_futebol():
         if response.status_code == 200:
             matches = response.json().get("matches", [])
             if matches:
-                jogo = random.choice(matches)
+                # Evita repetir jogos recentes
+                matches_disponiveis = [j for j in matches if j.get('id') not in jogos_analisados_recentemente]
+                if not matches_disponiveis:
+                    jogos_analisados_recentemente.clear()
+                    matches_disponiveis = matches
+
+                jogo = random.choice(matches_disponiveis)
+                jogos_analisados_recentemente.add(jogo.get('id'))
+
                 home = jogo['homeTeam']['name']
                 away = jogo['awayTeam']['name']
                 competicao = jogo.get('competition', {}).get('name', 'Futebol Internacional')
                 
+                if "Brasileiro" in competicao or "Serie A" in competicao or "Serie B" in competicao:
+                    competicao = f"🇧🇷 {competicao} (Foco Nacional)"
+
                 mercados_possiveis = [
                     (f"Vitória Simples - {home} (Casa)", random.uniform(62.0, 78.0)),
                     (f"Vitória Simples - {away} (Fora)", random.uniform(55.0, 72.0)),
@@ -76,6 +88,63 @@ def buscar_dados_futebol():
     
     return "⚽ *Kakaroto Odds:* Nenhuma partida disponível no momento para análise."
 
+def listar_jogos_por_status(tipo_filtro):
+    url = "https://api.football-data.org/v4/matches"
+    headers = {"X-Auth-Token": FOOTBALL_API_KEY}
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            matches = response.json().get("matches", [])
+            if not matches:
+                return "❌ Nenhuma partida encontrada na API no momento."
+
+            resultado = ""
+            contador = 0
+
+            if tipo_filtro == "agenda":
+                resultado = "📅 *PRÓXIMOS JOGOS & CAMPEONATOS (Com Horários)* 📅\n\n"
+                for jogo in matches:
+                    status = jogo.get('status')
+                    if status in ["TIMED", "SCHEDULED"]:
+                        home = jogo['homeTeam']['name']
+                        away = jogo['awayTeam']['name']
+                        comp = jogo.get('competition', {}).get('name', 'Futebol')
+                        utc_date_str = jogo.get('utcDate')
+                        
+                        if utc_date_str:
+                            horario_obj = datetime.fromisoformat(utc_date_str.replace('Z', '+00:00'))
+                            horario_br = horario_obj.strftime('%d/%m às %H:%M')
+                        else:
+                            horario_br = "Horário a definir"
+
+                        resultado += f"🕒 *{horario_br}* ➔ {home} vs {away} `({comp})`\n"
+                        contador += 1
+                        if contador >= 8:
+                            break
+
+            elif tipo_filtro == "aovivo":
+                resultado = "🔴 *PARTIDAS AO VIVO AGORA* ⚡\n\n"
+                for jogo in matches:
+                    status = jogo.get('status')
+                    if status in ["IN_PLAY", "LIVE", "PAUSED"]:
+                        home = jogo['homeTeam']['name']
+                        away = jogo['awayTeam']['name']
+                        placar = jogo.get('score', {}).get('fullTime', {})
+                        gols_casa = placar.get('home', 0)
+                        gols_fora = placar.get('away', 0)
+                        
+                        resultado += f"⚡ **{home} {gols_casa} x {gols_fora} {away}** *(AO VIVO)*\n"
+                        contador += 1
+                
+                if contador == 0:
+                    return "🔴 *Nenhum jogo rolando ao vivo neste exato momento.* Use `/agenda` para ver os próximos horários!"
+
+            return resultado if contador > 0 else "❌ Nenhum jogo encontrado para este filtro no momento."
+    except Exception as e:
+        logger.error(f"Erro ao filtrar jogos: {e}")
+    
+    return "❌ Erro ao consultar a agenda de jogos."
+
 def gerar_bilhetes_bingo():
     url = "https://api.football-data.org/v4/matches"
     headers = {"X-Auth-Token": FOOTBALL_API_KEY}
@@ -86,7 +155,6 @@ def gerar_bilhetes_bingo():
             if len(matches) < 6:
                 matches = matches * 3
                 
-            # Lista ampla de mercados variados para evitar repetições
             def sortear_mercado_variado(h, a):
                 opcoes = [
                     (f"Vitória ({h})", random.uniform(1.40, 1.85)),
@@ -124,7 +192,6 @@ def gerar_bilhetes_bingo():
                     home = j['homeTeam']['name']
                     away = j['awayTeam']['name']
                     mercado, o = sortear_mercado_variado(home, away)
-                    # Ajustando para odds maiores nas bombas
                     o = round(o * random.uniform(1.1, 1.3), 2)
                     odd_acum *= o
                     texto_bomba += f"  {i}️⃣ {home} vs {away} → {mercado} (@{o})\n"
@@ -228,9 +295,11 @@ def webhook():
                         f"👋 Seja muito bem-vindo(a) ao grupo, **{nome}**!\n\n"
                         f"🤖 Eu sou o **Kakaroto Odds**, seu assistente autônomo de análise esportiva profissional.\n\n"
                         f"📚 **GUIA DE COMANDOS PARA VOCÊ APRENDER:**\n"
-                        f"• `/odds` ➔ Gera uma análise de mercado detalhada com porcentagem de acerto na hora.\n"
-                        f"• `/bingo` ➔ Cria os bilhetes do dia (2 moderados + 2 bombas variados). 🎟️🔥\n"
-                        f"• `/placar` ➔ Mostra o painel de acertos e erros zerado. 🟢🔴\n"
+                        f"• `/odds` ➔ Gera uma análise de mercado detalhada com porcentagem.\n"
+                        f"• `/agenda` ➔ Próximos jogos e horários das ligas. 🕒\n"
+                        f"• `/aovivo` ➔ Partidas rolando ao vivo agora. ⚡\n"
+                        f"• `/bingo` ➔ Cria os bilhetes do dia (moderados + bombas). 🎟️🔥\n"
+                        f"• `/placar` ➔ Mostra o painel de acertos e erros. 🟢🔴\n"
                         f"• `/status` ➔ Verifica se o sistema está online. 🟢\n"
                         f"• `/help` ➔ Exibe a central de ajuda.\n\n"
                         f"Boa sorte nas apostas e rumo aos greens! ⚽🚀"
@@ -247,6 +316,8 @@ def webhook():
                     "Fala guerreiro! 🤖 **Kakaroto Odds Pro** ativado.\n\n"
                     "Comandos disponíveis:\n"
                     "• `/odds` - Análise de mercado com porcentagem\n"
+                    "• `/agenda` - Próximos jogos e horários 🕒\n"
+                    "• `/aovivo` - Partidas ao vivo no momento ⚡\n"
                     "• `/bingo` - Bilhetes moderados e bombas variados 🎟️🔥\n"
                     "• `/placar` - Placar e barra de acertos 🟢🔴\n"
                     "• `/status` - Status do sistema\n"
@@ -255,6 +326,12 @@ def webhook():
             elif "/odds" in texto_usuario:
                 relatorio = buscar_dados_futebol()
                 enviar_mensagem(chat_id, relatorio)
+            elif "/agenda" in texto_usuario:
+                agenda_texto = listar_jogos_por_status("agenda")
+                enviar_mensagem(chat_id, agenda_texto)
+            elif "/aovivo" in texto_usuario:
+                aovivo_texto = listar_jogos_por_status("aovivo")
+                enviar_mensagem(chat_id, aovivo_texto)
             elif "/bingo" in texto_usuario:
                 bilhetes = gerar_bilhetes_bingo()
                 enviar_mensagem(chat_id, bilhetes)
@@ -266,8 +343,7 @@ def webhook():
                     f"🟢 Acertos: *{ESTATISTICAS['acertos']}*\n"
                     f"🔴 Erros: *{ESTATISTICAS['erros']}*\n"
                     f"🟡 Reembolsos (Void): *{ESTATISTICAS['reembolsos']}*\n\n"
-                    f"🎯 *Taxa de Assertividade:* `{taxa}%`\n"
-                    f"📊 *Barra de Desempeno:* `[Placar Zerado]`"
+                    f"🎯 *Taxa de Assertividade:* `{taxa}%`"
                 )
             elif "/status" in texto_usuario:
                 uptime_minutos = int((time.time() - START_TIME) / 60)
@@ -281,12 +357,11 @@ def webhook():
                 enviar_mensagem(
                     chat_id,
                     "📖 *Central de Ajuda Kakaroto:*\n"
-                    "• Use `/odds` para análises com porcentagem exata.\n"
-                    "• Use `/bingo` para gerar bilhetes múltiplos variados."
+                    "• Use `/odds` para análises dinâmicas.\n"
+                    "• Use `/agenda` para ver horários.\n"
+                    "• Use `/aovivo` para placares em tempo real.\n"
+                    "• Use `/bingo` para bilhetes múltiplos."
                 )
-            elif "mercado" in texto_usuario or "melhor" in texto_usuario:
-                relatorio = buscar_dados_futebol()
-                enviar_mensagem(chat_id, f"📊 *Consulta Direta:*\n\n{relatorio}")
             else:
                 enviar_mensagem(
                     chat_id, 
